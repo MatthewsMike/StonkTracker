@@ -48,12 +48,18 @@ def output_message(message):
     show_message(device, message, fill="white", font=proportional(SINCLAIR_FONT), scroll_delay=0.04)
 
 def get_crypto_value(crypto = "BTC"):
-    response = requests.get(CRYPTO_API_URL + crypto)
-    response_json = response.json()
-    value = response_json['data'][crypto]['sparkline'][-1]
-    prev_value = response_json['data'][crypto]['sparkline'][0]
-    percent_change = value[1] / prev_value[1] - 1
-    return value[1], percent_change
+    while True:
+        try:
+            response = requests.get(CRYPTO_API_URL + crypto)
+            response_json = response.json()
+            value = response_json['data'][crypto]['sparkline'][-1]
+            prev_value = response_json['data'][crypto]['sparkline'][0]
+            percent_change = value[1] / prev_value[1] - 1
+            return value[1], percent_change
+        except:
+            output_message("Waiting For Internet...")
+            sleep(3)
+            pass
 
 def set_servo_angle(angle):
     duty = angle / 18.0 + 2
@@ -85,16 +91,16 @@ def update():
         message = crypto_list[crypto_index] + ": " + '{:,.4f}'.format(price) + ' ({:,.1f}%)'.format(change*100)
 
 if __name__ == "__main__":
-    #output_message("Hello")
-    #set_servo_angle(0)
-    #output_message("Min")
-    #sleep(1)
-    #set_servo_angle(90)
-    #output_message("Zero")
-    #sleep(1)
-    #set_servo_angle(180)
-    #output_message("Max")
-    #sleep(1)
+    output_message("Hello")
+    set_servo_angle(0)
+    output_message("Min")
+    sleep(1)
+    set_servo_angle(90)
+    output_message("Zero")
+    sleep(1)
+    set_servo_angle(180)
+    output_message("Max")
+    sleep(1)
     update()
     try:
         while True:
