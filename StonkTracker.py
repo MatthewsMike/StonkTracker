@@ -5,7 +5,14 @@ from luma.core.legacy import text, show_message
 from luma.core.legacy.font import proportional, CP437_FONT, TINY_FONT, SINCLAIR_FONT, LCD_FONT
 NUMBER_OF_DISPLAY_MODULES = 4
 message = ""
-
+serial = spi(port=0, device =0, gpio=noop())
+device = max7219(serial,
+            8 * NUMBER_OF_DISPLAY_MODULES,
+            block_orientation= 90,
+            rotate = 0, 
+            blocks_arranged_in_reverse_order = True)
+                    
+                    
 # Imports and Defines for BitCoin
 import requests
 CRYPTO_API_URL="https://production.api.coindesk.com/v2/price/ticker/sparkline?assets="
@@ -13,7 +20,7 @@ crypto_list = ["BTC", "DOGE", "ETH"]
 crypto_index = 0
 crypto_choice_changed = False
 crypto_last_updated = None
-MAX_TIME_IN_SECONDS_BETWEEN_UPDATES = 5 * 60
+MAX_TIME_IN_SECONDS_BETWEEN_UPDATES = 15 * 60
 
 
 # Imports and Defines for Servo
@@ -39,12 +46,7 @@ from datetime import datetime
 
 
 def output_message(message):
-    serial = spi(port=0, device =0, gpio=noop())
-    device = max7219(serial,
-                    8 * NUMBER_OF_DISPLAY_MODULES,
-                    block_orientation= 90,
-                    rotate = 0, 
-                    blocks_arranged_in_reverse_order = True)
+    global device
     show_message(device, message, fill="white", font=proportional(SINCLAIR_FONT), scroll_delay=0.04)
 
 def get_crypto_value(crypto = "BTC"):
@@ -57,9 +59,12 @@ def get_crypto_value(crypto = "BTC"):
             percent_change = value[1] / prev_value[1] - 1
             return value[1], percent_change
         except:
-            output_message("Waiting For Internet...")
-            sleep(3)
-            pass
+            if crypto_last_updated == None:
+                output_message("Waiting For Internet...")
+                sleep(10)
+            else:
+                output_message("API Request Error...")
+                sleep(60)
 
 def set_servo_angle(angle):
     duty = angle / 18.0 + 2
@@ -81,9 +86,9 @@ def rotate_rocket(percent_change):
 def update():
     global crypto_last_updated
     print("Updating Prices")
-    crypto_last_updated = datetime.now()
     global message, crypto_list, crypto_index
     price, change = get_crypto_value(crypto_list[crypto_index])
+    crypto_last_updated = datetime.now()
     rotate_rocket(change)
     if price >= 1:
         message = crypto_list[crypto_index] + ": " + '{:,.2f}'.format(price) + ' ({:,.1f}%)'.format(change*100)
